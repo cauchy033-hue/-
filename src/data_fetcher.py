@@ -79,6 +79,35 @@ def _fetch_akshare(code: str, period: str) -> pd.DataFrame:
     return df[["Open", "High", "Low", "Close", "Volume"]]
 
 
+_COLUMN_ALIASES = {
+    "日期": "Date", "date": "Date", "time": "Date", "交易日期": "Date",
+    "开盘": "Open", "open": "Open", "开盘价": "Open",
+    "最高": "High", "high": "High", "最高价": "High",
+    "最低": "Low", "low": "Low", "最低价": "Low",
+    "收盘": "Close", "close": "Close", "收盘价": "Close", "adj close": "Close",
+    "成交量": "Volume", "volume": "Volume", "vol": "Volume",
+}
+
+
+def load_csv(path: str | Path) -> pd.DataFrame:
+    """Load a user-supplied OHLCV CSV (English or common Chinese column headers)."""
+    df = pd.read_csv(path)
+    rename_map = {col: _COLUMN_ALIASES[col.strip().lower()] for col in df.columns
+                  if col.strip().lower() in _COLUMN_ALIASES}
+    df = df.rename(columns=rename_map)
+
+    missing = {"Date", "Open", "High", "Low", "Close", "Volume"} - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"CSV is missing required column(s): {sorted(missing)}. "
+            f"Found columns: {list(df.columns)}"
+        )
+
+    df["Date"] = pd.to_datetime(df["Date"])
+    df = df.set_index("Date").sort_index()
+    return df[["Open", "High", "Low", "Close", "Volume"]].astype(float)
+
+
 def make_synthetic_ohlcv(code: str, days: int = 500, seed: int | None = None) -> pd.DataFrame:
     """Generate a plausible-looking random-walk OHLCV series for offline demos and tests."""
     rng = np.random.default_rng(seed if seed is not None else abs(hash(code)) % (2**32))

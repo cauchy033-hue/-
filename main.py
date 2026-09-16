@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 from src.backtester import run_backtest
-from src.data_fetcher import fetch_history
+from src.data_fetcher import FetchResult, detect_market, fetch_history, load_csv
 from src.indicators import add_all_indicators
 from src.predictor import predict
 from src.report import build_text_report, plot_chart
@@ -25,8 +25,11 @@ OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 
 def analyze(code: str, period: str = "2y", predict_days: int = 5, demo: bool = False,
-            save_chart: bool = True) -> str:
-    result = fetch_history(code, period=period, demo=demo)
+            save_chart: bool = True, csv_path: str | None = None) -> str:
+    if csv_path:
+        result = FetchResult(code, detect_market(code), load_csv(csv_path), source=f"csv:{csv_path}")
+    else:
+        result = fetch_history(code, period=period, demo=demo)
     df = result.df
     if len(df) < 80:
         raise ValueError(f"Only {len(df)} rows of data fetched; need at least ~80 for reliable indicators.")
@@ -54,12 +57,13 @@ def main() -> None:
     parser.add_argument("--predict-days", type=int, default=5, help="预测未来N个交易日走势 (默认 5)")
     parser.add_argument("--no-chart", action="store_true", help="跳过图表生成")
     parser.add_argument("--demo", action="store_true", help="离线演示模式：使用随机生成的模拟数据，无需联网")
+    parser.add_argument("--csv", help="使用本地CSV历史行情文件而非联网获取（需包含日期/开盘/最高/最低/收盘/成交量列）")
     args = parser.parse_args()
 
     try:
         report = analyze(
             args.code, period=args.period, predict_days=args.predict_days,
-            demo=args.demo, save_chart=not args.no_chart,
+            demo=args.demo, save_chart=not args.no_chart, csv_path=args.csv,
         )
         print(report)
     except Exception as exc:  # noqa: BLE001

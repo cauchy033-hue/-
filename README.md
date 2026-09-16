@@ -37,6 +37,9 @@ python main.py 0700.HK --predict-days 10
 
 # 离线演示模式：无需联网，使用模拟生成的行情数据体验完整流程
 python main.py 600519 --demo
+
+# 使用本地CSV历史行情文件（当运行环境无法联网获取行情时）
+python main.py 002141 --csv ./002141_history.csv
 ```
 
 参数说明：
@@ -48,6 +51,9 @@ python main.py 600519 --demo
 | `--predict-days` | 预测未来 N 个交易日走势 | `5` |
 | `--no-chart` | 跳过图表生成 | - |
 | `--demo` | 离线演示模式，使用随机模拟数据 | - |
+| `--csv` | 使用本地CSV文件而非联网获取，需包含日期/开盘/最高/最低/收盘/成交量列（支持中英文表头） | - |
+
+> 💡 若运行环境的出网策略限制访问 Yahoo Finance / akshare 等行情源（常见于沙盒/CI环境），可先在能联网的机器或终端下载好历史行情CSV，再用 `--csv` 参数离线分析。
 
 图表默认保存在 `output/<代码>_chart.png`，行情数据缓存在 `data_cache/`。
 
